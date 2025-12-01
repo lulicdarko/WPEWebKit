@@ -648,6 +648,7 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
     , m_appHighlightsVisible(parameters.appHighlightsVisible)
 #endif
     , m_historyItemClient(WebHistoryItemClient::create())
+    , m_resumeTimer(*this, &WebPage::resumeTimerFired)
 #if ENABLE(WRITING_TOOLS_UI)
     , m_textAnimationController(makeUniqueRef<TextAnimationController>(*this))
 #endif
@@ -4256,19 +4257,61 @@ void WebPage::resumeActiveDOMObjectsAndAnimations()
     m_page->resumeActiveDOMObjectsAndAnimations();
 }
 
+enum class EventType { Freeze, Resume };
+
+static void fireFreezeOrResumeEvent(Page& page, EventType type)
+{
+    Ref mainFrame = page.mainFrame();
+
+    Vector<Ref<LocalFrame>> childFrames;
+    for (auto* child = mainFrame->tree().traverseNextInPostOrder(WebCore::CanWrap::Yes); child; child = child->tree().traverseNextInPostOrder(WebCore::CanWrap::No)) {
+        if (RefPtr localChild = dynamicDowncast<LocalFrame>(child))
+            childFrames.append(localChild.releaseNonNull());
+    }
+
+    for (auto& child : childFrames) {
+        if (!child->tree().isDescendantOf(mainFrame.ptr()))
+            continue;
+        RefPtr document = child->document();
+        if (!document)
+            continue;
+
+        switch (type) {
+        case EventType::Freeze:
+            document->freeze();
+            break;
+        case EventType::Resume:
+            document->resume();
+            break;
+        default:
+            ASSERT_NOT_REACHED();
+        }
+    }
+}
+
 void WebPage::suspend(CompletionHandler<void(bool)>&& completionHandler)
 {
     WEBPAGE_RELEASE_LOG(Loading, "suspend: m_page=%p", m_page.get());
     if (!m_page)
         return completionHandler(false);
 
+    // Before starting the suspension, notify the page so it can react to it.
+    fireFreezeOrResumeEvent(*m_page, EventType::Freeze);
+
     freezeLayerTree(LayerTreeFreezeReason::PageSuspended);
 
+    BackForwardCache::singleton().setUsePageLifecycleEvents(true);
     m_cachedPage = BackForwardCache::singleton().suspendPage(*m_page);
+    BackForwardCache::singleton().setUsePageLifecycleEvents(false);
     ASSERT(m_cachedPage);
     if (RefPtr mainFrame = m_mainFrame->coreLocalFrame())
         mainFrame->detachFromAllOpenedFrames();
     completionHandler(true);
+}
+
+void WebPage::resumeTimerFired()
+{
+    fireFreezeOrResumeEvent(*m_page, EventType::Resume);
 }
 
 void WebPage::resume(CompletionHandler<void(bool)>&& completionHandler)
@@ -4284,6 +4327,10 @@ void WebPage::resume(CompletionHandler<void(bool)>&& completionHandler)
 
     cachedPage->restore(*m_page);
     unfreezeLayerTree(LayerTreeFreezeReason::PageSuspended);
+
+    // After we have resumed, notify the page.
+    m_resumeTimer.startOneShot(0_s);
+
     completionHandler(true);
 }
 

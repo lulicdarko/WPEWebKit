@@ -2299,6 +2299,8 @@ private:
 
     void useRedirectionForCurrentNavigation(WebCore::ResourceResponse&&);
 
+    void resumeTimerFired();
+
     void dispatchLoadEventToFrameOwnerElement(WebCore::FrameIdentifier);
 
     void frameWasFocusedInAnotherProcess(WebCore::FrameIdentifier);
@@ -2880,7 +2882,7 @@ private:
 #if ENABLE(EXTENSION_CAPABILITIES)
     String m_mediaEnvironment;
 #endif
-
+    WebCore::Timer m_resumeTimer;
 #if ENABLE(WRITING_TOOLS_UI)
     UniqueRef<TextAnimationController> m_textAnimationController;
 #endif
