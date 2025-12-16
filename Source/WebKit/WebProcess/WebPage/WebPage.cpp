@@ -649,6 +649,7 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
 #endif
     , m_historyItemClient(WebHistoryItemClient::create())
     , m_resumeTimer(*this, &WebPage::resumeTimerFired)
+    , m_suspendTimer(*this, &WebPage::suspendTimerFired)
 #if ENABLE(WRITING_TOOLS_UI)
     , m_textAnimationController(makeUniqueRef<TextAnimationController>(*this))
 #endif
@@ -4289,12 +4290,8 @@ static void fireFreezeOrResumeEvent(Page& page, EventType type)
     }
 }
 
-void WebPage::suspend(CompletionHandler<void(bool)>&& completionHandler)
+void WebPage::suspendTimerFired()
 {
-    WEBPAGE_RELEASE_LOG(Loading, "suspend: m_page=%p", m_page.get());
-    if (!m_page)
-        return completionHandler(false);
-
     // Before starting the suspension, notify the page so it can react to it.
     fireFreezeOrResumeEvent(*m_page, EventType::Freeze);
 
@@ -4306,7 +4303,19 @@ void WebPage::suspend(CompletionHandler<void(bool)>&& completionHandler)
     ASSERT(m_cachedPage);
     if (RefPtr mainFrame = m_mainFrame->coreLocalFrame())
         mainFrame->detachFromAllOpenedFrames();
+
+    auto completionHandler = std::exchange(m_suspendCompletionHandler, { });
     completionHandler(true);
+}
+
+void WebPage::suspend(CompletionHandler<void(bool)>&& completionHandler)
+{
+    WEBPAGE_RELEASE_LOG(Loading, "suspend: m_page=%p", m_page.get());
+    if (!m_page)
+        return completionHandler(false);
+
+    m_suspendCompletionHandler = WTFMove(completionHandler);
+    m_suspendTimer.startOneShot(0_ms);
 }
 
 void WebPage::resumeTimerFired()

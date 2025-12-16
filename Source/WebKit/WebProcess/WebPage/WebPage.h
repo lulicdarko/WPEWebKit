@@ -2300,6 +2300,7 @@ private:
     void useRedirectionForCurrentNavigation(WebCore::ResourceResponse&&);
 
     void resumeTimerFired();
+    void suspendTimerFired();
 
     void dispatchLoadEventToFrameOwnerElement(WebCore::FrameIdentifier);
 
@@ -2882,7 +2883,10 @@ private:
 #if ENABLE(EXTENSION_CAPABILITIES)
     String m_mediaEnvironment;
 #endif
+
     WebCore::Timer m_resumeTimer;
+    WebCore::Timer m_suspendTimer;
+    CompletionHandler<void(bool)> m_suspendCompletionHandler;
 #if ENABLE(WRITING_TOOLS_UI)
     UniqueRef<TextAnimationController> m_textAnimationController;
 #endif

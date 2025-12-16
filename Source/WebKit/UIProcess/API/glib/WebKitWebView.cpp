@@ -5889,9 +5889,6 @@ gboolean webkit_web_view_hide_plc(WebKitWebView *webView)
     state.remove(WebCore::ActivityState::IsVisible);
     webView->priv->view->setViewState(state);
 
-    // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-    WTF::sleep(100_ms);
-
     return TRUE;
 }
 
@@ -5914,9 +5911,6 @@ gboolean webkit_web_view_show_plc(WebKitWebView *webView)
     state.add(WebCore::ActivityState::IsVisible);
     webView->priv->view->setViewState(state);
 
-    // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-    WTF::sleep(100_ms);
-
     return TRUE;
 }
 
@@ -5936,9 +5930,6 @@ gboolean webkit_web_view_focus_plc(WebKitWebView *webView)
     state.add(WebCore::ActivityState::IsFocused);
     webView->priv->view->setViewState(state);
 
-    // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-    WTF::sleep(100_ms);
-
     return TRUE;
 }
 
@@ -5957,9 +5948,6 @@ gboolean webkit_web_view_blur_plc(WebKitWebView *webView)
 
     state.remove(WebCore::ActivityState::IsFocused);
     webView->priv->view->setViewState(state);
-
-    // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-    WTF::sleep(100_ms);
 
     return TRUE;
 }
@@ -5983,9 +5971,6 @@ gboolean webkit_web_view_freeze_plc(WebKitWebView *webView, GAsyncReadyCallback 
     webView->priv->isWaitingForFreezeCallback = true;
     GRefPtr<GTask> task = adoptGRef(g_task_new(webView, NULL, callback, userData));
     getPage(webView).suspend([task = WTFMove(task)](bool success) {
-        // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-        WTF::sleep(100_ms);
-
         WebKitWebView* webView = WEBKIT_WEB_VIEW(g_task_get_source_object(task.get()));
         webView->priv->isWaitingForFreezeCallback = false;
         g_task_return_boolean(task.get(), success);
@@ -6021,9 +6006,6 @@ gboolean webkit_web_view_resume_plc(WebKitWebView *webView, GAsyncReadyCallback 
     webView->priv->isWaitingForResumeCallback = true;
     GRefPtr<GTask> task = adoptGRef(g_task_new(webView, NULL, callback, userData));
     getPage(webView).resume([task = WTFMove(task)](bool success) {
-        // Sleep for 100ms to allow the WebProcess to process the changes and finish the state transition.
-        WTF::sleep(100_ms);
-
         WebKitWebView* webView = WEBKIT_WEB_VIEW(g_task_get_source_object(task.get()));
         webView->priv->isWaitingForResumeCallback = false;
         g_task_return_boolean(task.get(), success);
