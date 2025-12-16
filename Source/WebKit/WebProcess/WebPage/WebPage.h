@@ -2887,6 +2887,7 @@ private:
     WebCore::Timer m_resumeTimer;
     WebCore::Timer m_suspendTimer;
     CompletionHandler<void(bool)> m_suspendCompletionHandler;
+    CompletionHandler<void(bool)> m_resumeCompletionHandler;
 #if ENABLE(WRITING_TOOLS_UI)
     UniqueRef<TextAnimationController> m_textAnimationController;
 #endif

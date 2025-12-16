@@ -4321,6 +4321,9 @@ void WebPage::suspend(CompletionHandler<void(bool)>&& completionHandler)
 void WebPage::resumeTimerFired()
 {
     fireFreezeOrResumeEvent(*m_page, EventType::Resume);
+
+    auto completionHandler = std::exchange(m_resumeCompletionHandler, { });
+    completionHandler(true);
 }
 
 void WebPage::resume(CompletionHandler<void(bool)>&& completionHandler)
@@ -4337,10 +4340,10 @@ void WebPage::resume(CompletionHandler<void(bool)>&& completionHandler)
     cachedPage->restore(*m_page);
     unfreezeLayerTree(LayerTreeFreezeReason::PageSuspended);
 
-    // After we have resumed, notify the page.
+    // After we have resumed, schedule a call to notify the page and invoke
+    // the completionHandler.
+    m_resumeCompletionHandler = WTFMove(completionHandler);
     m_resumeTimer.startOneShot(0_s);
-
-    completionHandler(true);
 }
 
 IntPoint WebPage::screenToRootView(const IntPoint& point)
