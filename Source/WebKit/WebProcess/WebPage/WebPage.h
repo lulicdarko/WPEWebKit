@@ -2516,6 +2516,7 @@ private:
     WebCore::Timer m_resumeTimer;
     WebCore::Timer m_suspendTimer;
     CompletionHandler<void(bool)> m_suspendCompletionHandler;
+    CompletionHandler<void(bool)> m_resumeCompletionHandler;
 };
 
 #if !PLATFORM(IOS_FAMILY)
