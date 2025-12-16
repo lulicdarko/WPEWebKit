@@ -2032,6 +2032,7 @@ private:
     bool shouldAvoidComputingPostLayoutDataForEditorState() const;
 
     void resumeTimerFired();
+    void suspendTimerFired();
 
     WebCore::PageIdentifier m_identifier;
 
@@ -2511,7 +2512,10 @@ private:
 #if ENABLE(IMAGE_ANALYSIS_ENHANCEMENTS)
     WeakHashSet<WebCore::HTMLImageElement> m_elementsToExcludeFromRemoveBackground;
 #endif
+
     WebCore::Timer m_resumeTimer;
+    WebCore::Timer m_suspendTimer;
+    CompletionHandler<void(bool)> m_suspendCompletionHandler;
 };
 
 #if !PLATFORM(IOS_FAMILY)
