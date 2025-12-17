@@ -635,11 +635,11 @@ WebPageProxy::Internals::Internals(WebPageProxy& page)
 #if ENABLE(VIDEO_PRESENTATION_MODE)
     , fullscreenVideoTextRecognitionTimer(RunLoop::main(), &page, &WebPageProxy::fullscreenVideoTextRecognitionTimerFired)
 #endif
-#if PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(GTK)
     , activityStateChangeTimer(RunLoop::main(), &page, &WebPageProxy::dispatchActivityStateChange)
 #endif
 {
-#if PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(GTK)
     activityStateChangeTimer.setName("[WebKit] ActivityStateChange"_s);
     // Give the events causing activity state changes more priority than the change timer.
     activityStateChangeTimer.setPriority(RunLoopSourcePriority::RunLoopTimer + 1);
@@ -2659,7 +2659,7 @@ void WebPageProxy::setSuppressVisibilityUpdates(bool flag)
     m_suppressVisibilityUpdates = flag;
 
     if (!m_suppressVisibilityUpdates) {
-#if PLATFORM(COCOA) || PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(COCOA) || PLATFORM(GTK)
         scheduleActivityStateUpdate();
 #else
         dispatchActivityStateChange();
@@ -2753,15 +2753,12 @@ void WebPageProxy::activityStateDidChange(OptionSet<ActivityState> mayHaveChange
         return;
     }
 
-#if PLATFORM(COCOA) || PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(COCOA) || PLATFORM(GTK)
     bool isNewlyInWindow = !isInWindow() && (mayHaveChanged & ActivityState::IsInWindow) && pageClient->isViewInWindow();
     if (dispatchMode == ActivityStateChangeDispatchMode::Immediate || isNewlyInWindow) {
         dispatchActivityStateChange();
         return;
     }
-    scheduleActivityStateUpdate();
-#elif PLATFORM(GTK) || PLATFORM(WPE)
-    UNUSED_PARAM(dispatchMode);
     scheduleActivityStateUpdate();
 #else
     UNUSED_PARAM(dispatchMode);
@@ -2814,7 +2811,7 @@ void WebPageProxy::dispatchActivityStateChange()
     m_hasScheduledActivityStateUpdate = false;
 #endif
 
-#if PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(GTK)
     internals().activityStateChangeTimer.stop();
 #endif
 

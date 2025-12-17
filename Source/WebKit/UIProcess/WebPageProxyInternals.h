@@ -381,7 +381,7 @@ public:
     HashMap<WebCore::RegistrableDomain, OptionSet<WebCore::WindowProxyProperty>> windowOpenerAccessedProperties;
 #endif
 
-#if PLATFORM(GTK) || PLATFORM(WPE)
+#if PLATFORM(GTK)
     RunLoop::Timer activityStateChangeTimer;
 #endif
 

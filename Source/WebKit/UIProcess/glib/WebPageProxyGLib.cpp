@@ -86,6 +86,7 @@ void WebPageProxy::didFinishLoadForResource(WebCore::ResourceLoaderIdentifier re
         manager->didFinishLoad(resourceID, frameID, WTFMove(error));
 }
 
+#if PLATFORM(GTK)
 void WebPageProxy::scheduleActivityStateUpdate()
 {
     if (internals().activityStateChangeTimer.isActive())
@@ -93,5 +94,6 @@ void WebPageProxy::scheduleActivityStateUpdate()
 
     internals().activityStateChangeTimer.startOneShot(0_s);
 }
+#endif
 
 } // namespace WebKit
