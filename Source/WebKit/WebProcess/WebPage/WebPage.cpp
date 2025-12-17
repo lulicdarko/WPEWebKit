@@ -585,6 +585,7 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
 #endif
     , m_resumeTimer(*this, &WebPage::resumeTimerFired)
     , m_suspendTimer(*this, &WebPage::suspendTimerFired)
+    , m_setActivityStateTimer(*this, &WebPage::setActivityStateTimerFired)
 {
     ASSERT(m_identifier);
     WEBPAGE_RELEASE_LOG(Loading, "constructor:");
@@ -3626,7 +3627,30 @@ void WebPage::visibilityDidChange()
 
 void WebPage::setActivityState(OptionSet<ActivityState::Flag> activityState, ActivityStateChangeID activityStateChangeID, CompletionHandler<void()>&& callback)
 {
+    // If this is a focus event, and the last event received was a show, there's the possibility that the visibilityChange
+    // event from the the show hasn't been dispatched yet. Instead of processing the focus event directly, schedule it
+    // so visiblityChange has a chance to be dispatched.
+    bool shouldSchedule = !m_activityState.contains(ActivityState::IsFocused) && activityState.contains(ActivityState::IsFocused) && m_lastEventReceivedIsShow;
+
+    m_lastEventReceivedIsShow = !m_activityState.contains(ActivityState::IsVisible) && activityState.contains(ActivityState::IsVisible);
+
+    m_activityStateParameter = WTFMove(activityState);
+    m_activityStateChangeIDParameter = activityStateChangeID;
+    m_activityStateCallbackParameter = WTFMove(callback);
+
+    if (shouldSchedule)
+        m_setActivityStateTimer.startOneShot(0_ms);
+    else
+        setActivityStateTimerFired();
+}
+
+void WebPage::setActivityStateTimerFired()
+{
     LOG_WITH_STREAM(ActivityState, stream << "WebPage " << identifier().toUInt64() << " setActivityState to " << activityState);
+
+    auto activityState = std::exchange(m_activityStateParameter, { });
+    auto activityStateChangeID = std::exchange(m_activityStateChangeIDParameter, 0);
+    auto callback = std::exchange(m_activityStateCallbackParameter, { });
 
     auto changed = m_activityState ^ activityState;
     m_activityState = activityState;

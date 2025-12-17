@@ -2033,6 +2033,7 @@ private:
 
     void resumeTimerFired();
     void suspendTimerFired();
+    void setActivityStateTimerFired();
 
     WebCore::PageIdentifier m_identifier;
 
@@ -2517,6 +2518,11 @@ private:
     WebCore::Timer m_suspendTimer;
     CompletionHandler<void(bool)> m_suspendCompletionHandler;
     CompletionHandler<void(bool)> m_resumeCompletionHandler;
+    WebCore::Timer m_setActivityStateTimer;
+    OptionSet<WebCore::ActivityState::Flag> m_activityStateParameter;
+    ActivityStateChangeID m_activityStateChangeIDParameter { 0 };
+    CompletionHandler<void()> m_activityStateCallbackParameter;
+    bool m_lastEventReceivedIsShow { false };
 };
 
 #if !PLATFORM(IOS_FAMILY)
